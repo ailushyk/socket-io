@@ -1,24 +1,45 @@
-import React from 'react'
-import logo from './logo.svg'
-import './App.css'
+import React, { useEffect, useState } from 'react'
+import io from 'socket.io-client'
 
-function App() {
+const socket = io('http://localhost:3010', {
+  withCredentials: true,
+})
+
+const App = () => {
+  const [isConnected, setIsConnected] = useState(socket.connected)
+  const [lastPong, setLastPong] = useState<string>(null!)
+
+  useEffect(() => {
+    socket.on('connect', () => {
+      setIsConnected(true)
+    })
+
+    socket.on('disconnect', () => {
+      setIsConnected(false)
+    })
+
+    socket.on('pong', () => {
+      setLastPong(new Date().toISOString())
+    })
+
+    return () => {
+      socket.off('connect')
+      socket.off('disconnect')
+      socket.off('pong')
+    }
+  }, [])
+
+  const sendPing = () => {
+    socket.volatile.emit('ping')
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <div>app</div>
+      <div>status: {isConnected ? 'connected' : 'disconnected'}</div>
+      <p>Connected: {'' + isConnected}</p>
+      <p>Last pong: {lastPong || '-'}</p>
+      <button onClick={sendPing}>Send ping</button>
     </div>
   )
 }
